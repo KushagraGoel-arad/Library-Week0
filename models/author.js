@@ -1,16 +1,22 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
   const Author = sequelize.define('Author', {
-    name: DataTypes.STRING,
-    biography: DataTypes.TEXT,
-    born_date: DataTypes.DATE
-  }, {});
-  Author.associate = function(models) {
-    
-    Author.hasMany(models.Book, {
-      foreignKey: 'authorId',
-      as: 'books'
-    });
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    biography: {
+      type: DataTypes.TEXT,
+    },
+    born_date: {
+      type: DataTypes.DATE,
+    },
+  });
+
+  Author.associate = (models) => {
+    Author.hasMany(models.Book, { foreignKey: 'authorId' });
   };
+
   return Author;
 };
+

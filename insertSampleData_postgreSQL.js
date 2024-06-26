@@ -7,6 +7,9 @@ const sequelize = new Sequelize('dev_db', 'librarian1', 'libhead1', {
 const Author = require('./models/author')(sequelize, DataTypes);
 const Book = require('./models/book')(sequelize, DataTypes);
 
+Author.associate({ Book });
+Book.associate({ Author });
+
 async function insertData() {
   await sequelize.sync({ force: true });
 
