@@ -4,12 +4,12 @@ module.exports = (sequelize, DataTypes) => {
     title: DataTypes.STRING,
     description: DataTypes.TEXT,
     published_date: DataTypes.DATE,
-    author_id: DataTypes.INTEGER
+    authorId: DataTypes.INTEGER
   }, {});
   Book.associate = function(models) {
-    // associations can be defined here
+   
     Book.belongsTo(models.Author, {
-      foreignKey: 'author_id',
+      foreignKey: 'authorId',
       as: 'author'
     });
   };

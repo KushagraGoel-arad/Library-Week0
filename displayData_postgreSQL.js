@@ -11,7 +11,7 @@ async function displayData() {
   await sequelize.authenticate();
   
   const authors = await Author.findAll({
-    include: Book
+    include: 'books'
   });
 
   console.log(JSON.stringify(authors, null, 2));
