@@ -29,9 +29,9 @@ const typeDefs = gql`
   }
 
   type Query {
-    authors: [Author]
+    authors(limit: Int, offset: Int, name: String, birthYear: String): [Author]
     author(id: ID!): Author
-    books: [Book]
+    books(limit: Int, offset: Int, title: String, author: String, publishDate: String): [Book]
     book(id: ID!): Book
   }
 
@@ -49,29 +49,56 @@ const typeDefs = gql`
 
 const resolvers = {
   Query: {
-    authors: async () => await Author.findAll(),
-    author: async (parent, args) => await Author.findByPk(args.id),
-    books: async () => await Book.findAll(),
-    book: async (parent, args) => await Book.findByPk(args.id)
+    authors: async (parent, { limit, offset, name, birthYear }) => {
+      const where = {};
+      if (name) where.name = { [Op.iLike]: `%${name}%` };
+      if (birthYear) where.born_date = { [Op.like]: `${birthYear}%` };
+
+      return await Author.findAll({
+        where,
+        limit,
+        offset
+      });
+    },
+    author: async (parent, { id }) => await Author.findByPk(id),
+    books: async (parent, { limit, offset, title, author, publishDate }) => {
+      const where = {};
+      if (title) where.title = { [Op.iLike]: `%${title}%` };
+      if (author) {
+        const authors = await Author.findAll({
+          where: { name: { [Op.iLike]: `%${author}%` } },
+          attributes: ['id']
+        });
+        where.author_id = authors.map(author => author.id);
+      }
+      if (publishDate) where.published_date = { [Op.like]: `${publishDate}%` };
+
+      return await Book.findAll({
+        where,
+        limit,
+        offset
+      });
+    },
+    book: async (parent, { id }) => await Book.findByPk(id)
   },
   Mutation: {
     createAuthor: async (parent, args) => await Author.create(args),
-    updateAuthor: async (parent, args) => {
-      const author = await Author.findByPk(args.id);
+    updateAuthor: async (parent, { id, ...args }) => {
+      const author = await Author.findByPk(id);
       return await author.update(args);
     },
-    deleteAuthor: async (parent, args) => {
-      const author = await Author.findByPk(args.id);
+    deleteAuthor: async (parent, { id }) => {
+      const author = await Author.findByPk(id);
       await author.destroy();
       return true;
     },
     createBook: async (parent, args) => await Book.create(args),
-    updateBook: async (parent, args) => {
-      const book = await Book.findByPk(args.id);
+    updateBook: async (parent, { id, ...args }) => {
+      const book = await Book.findByPk(id);
       return await book.update(args);
     },
-    deleteBook: async (parent, args) => {
-      const book = await Book.findByPk(args.id);
+    deleteBook: async (parent, { id }) => {
+      const book = await Book.findByPk(id);
       await book.destroy();
       return true;
     }
