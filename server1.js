@@ -5,21 +5,20 @@ const express = require('express');
 const { ApolloServer } = require('apollo-server-express');
 const { ObjectId } = require('bson');
 
-// PostgreSQL database setup
 const sequelize = new Sequelize('dev_db', 'librarian1', 'libhead1', {
   host: '127.0.0.1',
   dialect: 'postgres',
 });
 
-// Models setup
+
 const Author = require('./models/author')(sequelize, DataTypes);
 const Book = require('./models/book')(sequelize, DataTypes);
 
-// Define relationships
+
 Author.hasMany(Book, { foreignKey: 'authorId', as: 'books' });
 Book.belongsTo(Author, { foreignKey: 'authorId', as: 'author' });
 
-// MongoDB connection for Reviews
+
 mongoose.connect('mongodb://localhost:27017/libBook', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -27,10 +26,8 @@ mongoose.connect('mongodb://localhost:27017/libBook', {
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-// Assuming Review model is properly defined in './models/review'
 const Review = require('./models/review');
 
-// GraphQL schema definition
 const typeDefs = gql`
   type Author {
     id: ID!
