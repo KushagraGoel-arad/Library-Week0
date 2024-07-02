@@ -1,5 +1,5 @@
 import { useQuery, useMutation, gql } from '@apollo/client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import BookForm from './BookForm';
 import StarRating from '../components/StarRating';
 import { getUserIdFromToken } from '../utilities/auth';
@@ -88,19 +88,19 @@ const styles = {
     border: '1px solid #ccc',
     backgroundColor: '#f9f9f9',
     boxShadow: '0 1px 5px rgba(0, 0, 0, 0.1)',
-    display: 'flex', // Flexbox for horizontal alignment
-    flexDirection: 'column', // Stack elements vertically
-    justifyContent: 'space-between', // Space out children
-    alignItems: 'flex-start', // Align items to start horizontally
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   bookDetails: {
-    flexGrow: 1, // Take up remaining space
-    marginBottom: '10px', // Space between details and buttons
+    flexGrow: 1,
+    marginBottom: '10px',
   },
   buttonGroup: {
     display: 'flex',
-    gap: '10px', // Space between buttons
-    alignSelf: 'flex-end', // Align buttons to the right side
+    gap: '10px',
+    alignSelf: 'flex-end',
   },
   bookTitle: {
     fontSize: '18px',
@@ -160,8 +160,8 @@ const styles = {
   addButtonHover: {
     backgroundColor: '#218838',
   },
-  
 };
+
 const style = {
   listContainer: {
     display: 'flex',
@@ -177,9 +177,14 @@ const style = {
     fontSize: '14px',
   },
 };
+
 const BookList = () => {
+  const bookFormRef = useRef(null);
+  const [filters, setFilters] = useState({ title: '', author: '', publishDate: '' });
+  const [limit, setLimit] = useState(10);
+  const [offset, setOffset] = useState(0);
   const { loading, error, data, fetchMore, refetch } = useQuery(GET_BOOKS, {
-    variables: { limit: 50, offset: 0 },
+    variables: { limit, offset, ...filters },
     fetchPolicy: 'cache-and-network'
   });
   const [selectedBook, setSelectedBook] = useState(null);
@@ -193,8 +198,9 @@ const BookList = () => {
   const books = data?.books || [];
 
   const handleLoadMore = () => {
+    setOffset((prevOffset) => prevOffset + limit);
     fetchMore({
-      variables: { offset: books.length },
+      variables: { offset: offset + limit },
       updateQuery: (prev, { fetchMoreResult }) => {
         if (!fetchMoreResult) return prev;
         return {
@@ -272,6 +278,9 @@ const BookList = () => {
   const handleEditBook = (book) => {
     setEditingBookId(book.id);
     setSelectedBook(book);
+    if (bookFormRef.current) {
+      bookFormRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const handleDeleteBook = async (bookId) => {
@@ -295,37 +304,75 @@ const BookList = () => {
     }));
   };
 
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prevFilters) => ({ ...prevFilters, [name]: value }));
+  };
+
+  const handleFilterSubmit = (e) => {
+    e.preventDefault();
+    setOffset(0);
+    refetch({ limit, offset: 0, ...filters });
+  };
+
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error.message}</p>;
 
   return (
     <div style={styles.listContainer}>
       <center><h1>Books</h1></center>
-      <button
-        style={{
-          ...styles.addButton,
-          ...(isButtonHovered ? styles.addButtonHover : {}),
-        }}
-        onMouseEnter={() => setIsButtonHovered(true)}
-        onMouseLeave={() => setIsButtonHovered(false)}
-        onClick={handleAddClick}
-      >
-        Add New Book
-      </button>
+      
+      <center>
+      <form onSubmit={handleFilterSubmit} style={{ marginBottom: '20px' }}>
+        <input
+          type="text"
+          name="title"
+          placeholder="Filter by title"
+          value={filters.title}
+          onChange={handleFilterChange}
+          style={{ marginRight: '10px' }}
+        />
+        <input
+          type="text"
+          name="author"
+          placeholder="Filter by author"
+          value={filters.author}
+          onChange={handleFilterChange}
+          style={{ marginRight: '10px' }}
+        />
+        <input
+          type="date"
+          name="publishDate"
+          placeholder="Filter by publish date"
+          value={filters.publishDate}
+          onChange={handleFilterChange}
+          style={{ marginRight: '10px' }}
+        />
+        <p></p>
+        <button type="submit" style={styles.addButton}>Apply Filters</button>
+      </form>
+      </center>
+      
+
+
       {(editingBookId !== null || selectedBook === null) && (
+        <div ref={bookFormRef}>
         <BookForm book={selectedBook} onCompleted={handleFormCompleted} />
+      </div>
+        
       )}
+
       <ul className="book-list">
         {books.map((book) => (
           <li key={book.id} style={styles.bookItem}>
             <div style={styles.bookDetails}>
               <h2 style={styles.bookTitle}>{book.title}</h2>
               <a
-            style={style.link}
-            onClick={() => toggleDescription(book.id)}
-          >
-            {showDescriptions[book.id] ? 'Hide' : 'Show'} Description
-          </a>
+                style={style.link}
+                onClick={() => toggleDescription(book.id)}
+              >
+                {showDescriptions[book.id] ? 'Hide' : 'Show'} Description
+              </a>
               {showDescriptions[book.id] && book.description && (
                 <p style={styles.bookDescription}>Description: {book.description}</p>
               )}
@@ -349,28 +396,28 @@ const BookList = () => {
               <StarRating bookId={book.id} onSubmit={handleCreateReview} />
             </div>
             <div style={styles.buttonGroup}>
-            <button
-              style={{
-                ...styles.editButton,
-                ...(isButtonHovered ? styles.editButtonHover : {}),
-              }}
-              onMouseEnter={() => setIsButtonHovered(true)}
-              onMouseLeave={() => setIsButtonHovered(false)}
-              onClick={() => handleEditBook(book)}
-            >
-              Edit
-            </button>
-            <button
-              style={{
-                ...styles.deleteButton,
-                ...(isButtonHovered ? styles.deleteButtonHover : {}),
-              }}
-              onMouseEnter={() => setIsButtonHovered(true)}
-              onMouseLeave={() => setIsButtonHovered(false)}
-              onClick={() => handleDeleteBook(book.id)}
-            >
-              Delete
-            </button>
+              <button
+                style={{
+                  ...styles.editButton,
+                  ...(isButtonHovered ? styles.editButtonHover : {}),
+                }}
+                onMouseEnter={() => setIsButtonHovered(true)}
+                onMouseLeave={() => setIsButtonHovered(false)}
+                onClick={() => handleEditBook(book)}
+              >
+                Edit
+              </button>
+              <button
+                style={{
+                  ...styles.deleteButton,
+                  ...(isButtonHovered ? styles.deleteButtonHover : {}),
+                }}
+                onMouseEnter={() => setIsButtonHovered(true)}
+                onMouseLeave={() => setIsButtonHovered(false)}
+                onClick={() => handleDeleteBook(book.id)}
+              >
+                Delete
+              </button>
             </div>
           </li>
         ))}

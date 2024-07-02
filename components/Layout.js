@@ -22,11 +22,11 @@ const Layout = () => {
   return (
     <div className={styles.container}>
       <Head>
-        <title>Library Collection</title>
+        <title>Crossword</title>
         <meta name="description" content="Explore books and authors in our library." />
       </Head>
       <header className={styles.header}>
-        <h1 className={styles.title}>Library Collection</h1>
+        <h1 className={styles.title}>Crossword Collection</h1>
         <nav className={styles.nav}>
           <ul className={styles.navList}>
             <li className={styles.navItem}>

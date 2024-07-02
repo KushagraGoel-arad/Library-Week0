@@ -5,7 +5,7 @@ import styles from './page.module.css';
 const HomePage: React.FC = () => (
  
   <div className={styles.pageContainer}>
-  <h1 className={styles.heading}>Library Collection</h1>
+  <h1 className={styles.heading}>CROSSWORD</h1>
   <nav>
     <ul className={styles.navList}>
       <li className={styles.navItem}>
