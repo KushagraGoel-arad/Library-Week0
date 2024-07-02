@@ -242,7 +242,7 @@ const BookForm = ({ book, onCompleted }) => {
         />
       </div>
       <div style={styles.formGroup}>
-        <label style={styles.formLabel}>Author</label>
+        {/* <label style={styles.formLabel}>Author</label> */}
         <div>
           <input
             type="radio"
