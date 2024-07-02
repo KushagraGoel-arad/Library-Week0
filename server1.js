@@ -1,10 +1,36 @@
 const { gql } = require('apollo-server-express');
 const { Sequelize, DataTypes, Op } = require('sequelize');
 const mongoose = require('mongoose');
+const express = require('express');
+const { ApolloServer } = require('apollo-server-express');
+const { ObjectId } = require('bson');
+
+// PostgreSQL database setup
+const sequelize = new Sequelize('dev_db', 'librarian1', 'libhead1', {
+  host: '127.0.0.1',
+  dialect: 'postgres',
+});
+
+// Models setup
 const Author = require('./models/author')(sequelize, DataTypes);
 const Book = require('./models/book')(sequelize, DataTypes);
-const Review = require('./models/review'); 
 
+// Define relationships
+Author.hasMany(Book, { foreignKey: 'authorId', as: 'books' });
+Book.belongsTo(Author, { foreignKey: 'authorId', as: 'author' });
+
+// MongoDB connection for Reviews
+mongoose.connect('mongodb://localhost:27017/libBook', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+// Assuming Review model is properly defined in './models/review'
+const Review = require('./models/review');
+
+// GraphQL schema definition
 const typeDefs = gql`
   type Author {
     id: ID!
@@ -21,6 +47,7 @@ const typeDefs = gql`
     published_date: String
     author: Author
     reviews: [Review]
+    rating: Float
   }
 
   type Review {
@@ -29,6 +56,7 @@ const typeDefs = gql`
     comment: String
     userId: String!
     createdAt: String
+    bookId: ID!
     book: Book
   }
 
@@ -38,13 +66,30 @@ const typeDefs = gql`
     book(id: ID!): Book
   }
 
+  input CreateBookInput {
+    title: String!
+    description: String
+    published_date: String
+    authorId: ID!
+    rating: Float
+  }
+
+  input UpdateBookInput {
+    id: ID!
+    title: String
+    description: String
+    published_date: String
+    authorId: ID
+    rating: Float
+  }
+
   type Mutation {
     createAuthor(name: String!, biography: String, born_date: String): Author
     updateAuthor(id: ID!, name: String, biography: String, born_date: String): Author
     deleteAuthor(id: ID!): Boolean
 
-    createBook(title: String!, description: String, published_date: String, authorId: ID!): Book
-    updateBook(id: ID!, title: String, description: String, published_date: String, authorId: ID!): Book
+    createBook(input: CreateBookInput!): Book
+    updateBook(input: UpdateBookInput!): Book
     deleteBook(id: ID!): Boolean
 
     createReview(bookId: ID!, rating: Int!, comment: String, userId: String!): Review
@@ -82,32 +127,58 @@ const resolvers = {
     createAuthor: async (parent, args) => await Author.create(args),
     updateAuthor: async (parent, { id, ...args }) => {
       const author = await Author.findByPk(id);
+      if (!author) throw new Error('Author not found');
       return await author.update(args);
     },
     deleteAuthor: async (parent, { id }) => {
       const author = await Author.findByPk(id);
+      if (!author) throw new Error('Author not found');
       await author.destroy();
       return true;
     },
-    createBook: async (parent, args) => await Book.create(args),
-    updateBook: async (parent, { id, ...args }) => {
+    createBook: async (parent, { input }) => {
+      return await Book.create(input);
+    },
+    updateBook: async (parent, { input }) => {
+      const { id, ...args } = input;
       const book = await Book.findByPk(id);
+      if (!book) {
+        throw new Error('Book not found');
+      }
       return await book.update(args);
     },
     deleteBook: async (parent, { id }) => {
       const book = await Book.findByPk(id);
+      if (!book) throw new Error('Book not found');
       await book.destroy();
       return true;
     },
     createReview: async (parent, args) => {
-      const review = new Review(args);
+      const { bookId, rating, comment, userId } = args;
+      if (!ObjectId.isValid(bookId)) {
+        throw new Error('Invalid bookId');
+      }
+      const review = new Review({
+        bookId: new ObjectId(bookId),
+        rating,
+        comment,
+        userId,
+        createdAt: new Date()
+      });
       return await review.save();
     },
-    updateReview: async (parent, { id, ...args }) => {
-      return await Review.findByIdAndUpdate(id, args, { new: true });
+    updateReview: async (parent, { id, rating, comment }) => {
+      const updatedReview = await Review.findByIdAndUpdate(
+        id,
+        { rating, comment },
+        { new: true }
+      );
+      if (!updatedReview) throw new Error('Review not found');
+      return updatedReview;
     },
     deleteReview: async (parent, { id }) => {
-      await Review.findByIdAndDelete(id);
+      const deletedReview = await Review.findByIdAndDelete(id);
+      if (!deletedReview) throw new Error('Review not found');
       return true;
     }
   },
@@ -116,32 +187,35 @@ const resolvers = {
   },
   Book: {
     author: async (book) => await Author.findByPk(book.authorId),
-    reviews: async (book) => await Review.find({ bookId: book.id })
+    reviews: async (book) => {
+      return await Review.find({ bookId: new ObjectId(book.id) });
+    },
   },
   Review: {
     book: async (review) => await Book.findByPk(review.bookId)
   }
 };
 
-// Server setup
-const express = require('express');
-const { ApolloServer } = require('apollo-server-express');
-const sequelize = new Sequelize('dev_db', 'librarian1', 'libhead1', {
-  host: '127.0.0.1',
-  dialect: 'postgres',
-});
-
 async function startServer() {
-  const server = new ApolloServer({ typeDefs, resolvers });
-  await server.start();
-
-  const app = express();
-  server.applyMiddleware({ app });
-
-  const PORT = process.env.PORT || 4000;
-  app.listen(PORT, () => {
-    console.log(`🚀 Server ready at http://localhost:${PORT}${server.graphqlPath}`);
-  });
+  try {
+    await sequelize.authenticate();
+    console.log('PostgreSQL database connected!');
+    
+    await sequelize.sync();
+    
+    const server = new ApolloServer({ typeDefs, resolvers });
+    await server.start();
+    
+    const app = express();
+    server.applyMiddleware({ app });
+    
+    const PORT = process.env.PORT || 4000;
+    app.listen(PORT, () => {
+      console.log(`Server ready at http://localhost:${PORT}${server.graphqlPath}`);
+    });
+  } catch (error) {
+    console.error('Error starting the server:', error);
+  }
 }
 
 startServer();
