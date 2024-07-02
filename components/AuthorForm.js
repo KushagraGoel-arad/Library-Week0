@@ -1,4 +1,4 @@
-// AuthorForm.js
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useQuery, useMutation, gql } from '@apollo/client';

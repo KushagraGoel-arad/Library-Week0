@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import Head from 'next/head'; // For setting head tags like title, meta, etc.
+import Head from 'next/head'; 
 import Link from 'next/link';
-import styles from './Layout.module.css'; // Import CSS module for styling
-import BookList from './BookList'; // Import BookList component
-import AuthorList from './AuthorList'; // Import AuthorList component
+import styles from './Layout.module.css'; 
+import BookList from './BookList'; 
+import AuthorList from './AuthorList'; 
 
 const Layout = () => {
   const [showBooks, setShowBooks] = useState(false);
