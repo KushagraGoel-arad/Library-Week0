@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useMutation, gql } from '@apollo/client';
-import { useQuery } from '@apollo/client';
+import React, { useState, useEffect } from 'react';
+import { useMutation, gql, useQuery } from '@apollo/client';
 
 const CREATE_BOOK = gql`
   mutation CreateBook($input: CreateBookInput!) {
@@ -28,6 +27,15 @@ const UPDATE_BOOK = gql`
         id
         name
       }
+    }
+  }
+`;
+
+const CREATE_AUTHOR = gql`
+  mutation CreateAuthor($name: String!) {
+    createAuthor(name: $name) {
+      id
+      name
     }
   }
 `;
@@ -85,6 +93,7 @@ const styles = {
     backgroundColor: '#218838',
   },
 };
+
 const formatDate = (timestamp) => {
   const date = new Date(timestamp);
   const year = date.getFullYear();
@@ -93,17 +102,18 @@ const formatDate = (timestamp) => {
   return `${year}-${month}-${day}`;
 };
 
-
 const BookForm = ({ book, onCompleted }) => {
-
-
   const [formState, setFormState] = useState({
     title: book ? book.title : '',
     description: book ? book.description : '',
     published_date: book ? formatDate(book.published_date) : '',
     authorId: book ? book.author.id : '',
+    newAuthorName: '',
+    useExistingAuthor: true,
   });
+
   const [isButtonHovered, setIsButtonHovered] = useState(false);
+
   const { data: authorsData, loading: authorsLoading, error: authorsError } = useQuery(GET_AUTHORS);
 
   useEffect(() => {
@@ -113,6 +123,8 @@ const BookForm = ({ book, onCompleted }) => {
         description: book.description,
         published_date: formatDate(book.published_date),
         authorId: book.author ? book.author.id : '',
+        newAuthorName: '',
+        useExistingAuthor: true,
       });
     }
   }, [book]);
@@ -125,22 +137,49 @@ const BookForm = ({ book, onCompleted }) => {
     onCompleted,
   });
 
-  const handleSubmit = (event) => {
+  const [createAuthor] = useMutation(CREATE_AUTHOR);
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
+    const input = {
+      title: formState.title,
+      description: formState.description,
+      published_date: formState.published_date,
+      authorId: formState.authorId,
+    };
+
+    if (formState.useExistingAuthor) {
+      input.authorId = formState.authorId;
+    } else {
+     
+      const { data } = await createAuthor({
+        variables: {
+          name: formState.newAuthorName,
+        },
+      });
+
+      input.authorId = data.createAuthor.id;
+    }
+
     if (book) {
+      const updateInput = {
+        id: book.id,
+        title: formState.title,
+        description: formState.description,
+        published_date: formState.published_date,
+        authorId: input.authorId,
+      };
+
       updateBook({
         variables: {
-          input: {
-            id: book.id,
-            ...formState,
-          },
+          input: updateInput,
         },
       });
     } else {
       createBook({
         variables: {
-          input: formState,
+          input,
         },
       });
     }
@@ -151,6 +190,13 @@ const BookForm = ({ book, onCompleted }) => {
     setFormState({
       ...formState,
       [name]: value,
+    });
+  };
+
+  const handleAuthorToggle = (useExistingAuthor) => {
+    setFormState({
+      ...formState,
+      useExistingAuthor,
     });
   };
 
@@ -196,23 +242,63 @@ const BookForm = ({ book, onCompleted }) => {
         />
       </div>
       <div style={styles.formGroup}>
-        <label style={styles.formLabel} htmlFor="authorId">Author</label>
-        <select
-          id="authorId"
-          name="authorId"
-          style={styles.formInput}
-          value={formState.authorId}
-          onChange={handleChange}
-          required
-        >
-          <option value="">Select an author</option>
-          {authors.map((author) => (
-            <option key={author.id} value={author.id}>
-              {author.name}
-            </option>
-          ))}
-        </select>
+        <label style={styles.formLabel}>Author</label>
+        <div>
+          <input
+            type="radio"
+            id="existingAuthor"
+            name="authorOption"
+            value="existing"
+            checked={formState.useExistingAuthor}
+            onChange={() => handleAuthorToggle(true)}
+          />
+          <label htmlFor="existingAuthor">Select Existing Author</label>
+        </div>
+        <div>
+          <input
+            type="radio"
+            id="newAuthor"
+            name="authorOption"
+            value="new"
+            checked={!formState.useExistingAuthor}
+            onChange={() => handleAuthorToggle(false)}
+          />
+          <label htmlFor="newAuthor">Create New Author</label>
+        </div>
       </div>
+      {formState.useExistingAuthor ? (
+        <div style={styles.formGroup}>
+          <label style={styles.formLabel} htmlFor="authorId">Existing Author</label>
+          <select
+            id="authorId"
+            name="authorId"
+            style={styles.formInput}
+            value={formState.authorId}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Select an author</option>
+            {authors.map((author) => (
+              <option key={author.id} value={author.id}>
+                {author.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <div style={styles.formGroup}>
+          <label style={styles.formLabel} htmlFor="newAuthorName">New Author Name</label>
+          <input
+            type="text"
+            id="newAuthorName"
+            name="newAuthorName"
+            style={styles.formInput}
+            value={formState.newAuthorName}
+            onChange={handleChange}
+            required
+          />
+        </div>
+      )}
       <button
         type="submit"
         style={{
