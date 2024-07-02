@@ -1,17 +1,12 @@
 import { gql } from '@apollo/client';
 
-// Queries
+
+
 export const GET_AUTHOR = gql`
-  query GetAuthors($limit: Int, $offset: Int, $name: String, $birthYear: String) {
-    authors(limit: $limit, offset: $offset, name: $name, birthYear: $birthYear) {
+  query GetAuthors {
+    authors {
       id
       name
-      biography
-      born_date
-      books {
-        id
-        title
-      }
     }
   }
 `;
@@ -29,12 +24,14 @@ export const GET_BOOKS = gql`
   }
 `;
 
-// Mutations
+
 export const CREATE_AUTHOR = gql`
   mutation CreateAuthor($name: String!, $biography: String, $born_date: String) {
     createAuthor(name: $name, biography: $biography, born_date: $born_date) {
       id
       name
+      biography
+      born_date
     }
   }
 `;
@@ -50,12 +47,13 @@ export const CREATE_BOOK = gql`
     }
   }
 `;
-
 export const UPDATE_AUTHOR = gql`
   mutation UpdateAuthor($id: ID!, $name: String!, $biography: String, $born_date: String) {
     updateAuthor(id: $id, name: $name, biography: $biography, born_date: $born_date) {
       id
       name
+      biography
+      born_date
     }
   }
 `;
