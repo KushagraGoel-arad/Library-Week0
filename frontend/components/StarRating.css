@@ -1,0 +1,59 @@
+.star-rating input[type="radio"] {
+  display: none; 
+}
+
+.star-rating label {
+  cursor: pointer; 
+}
+
+.star {
+  transition: color 0.2s; 
+}
+
+.star-rating label:hover ~ label .star,
+.star-rating label:hover .star {
+  color: #ffc107; 
+}
+
+.star-rating {
+    display: inline-block;
+  }
+  
+  .star-rating label {
+    margin-right: 5px;
+    cursor: pointer;
+  }
+  
+  .star-rating .star {
+    transition: color 0.2s;
+  }
+  
+
+  .book-list {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .book-list li {
+    margin-bottom: 20px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  
+  .book-list h2 {
+    margin-bottom: 5px;
+  }
+  
+  .book-list p {
+    margin-bottom: 10px;
+  }
+  
+  .book-list .reviews {
+    margin-top: 10px;
+  }
+  
+  .book-list .review {
+    margin-bottom: 5px;
+  }
+  
