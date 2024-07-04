@@ -1,0 +1,58 @@
+/* components/Layout.module.css */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    background-color: #3a7ec6;
+  }
+  
+  .header {
+    background-color: #88bfed;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .title {
+    margin: 0;
+    font-size: 2rem;
+    color: #333;
+  }
+  
+  .nav {
+    margin-top: 1rem;
+  }
+  
+  .navList {
+    list-style-type: none;
+    padding: 0;
+    display: flex;
+  }
+  
+  .navItem {
+    margin-right: 1rem;
+  }
+  
+  .navLink {
+    color: #333;
+    text-decoration: none;
+    font-size: 1.2rem;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .navLink:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .main {
+    padding: 2rem 0;
+  }
+  
+  .footer {
+    text-align: center;
+    padding: 1rem 0;
+    background-color: #333;
+    color: #fff;
+  }
+  

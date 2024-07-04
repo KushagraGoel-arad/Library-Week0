@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "librarian1",
+    "password": "libhead1",
+    "database": "dev_db",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "librarian1",
+    "password": "libhead1",
+    "database": "test_db",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "librarian1",
+    "password": "libhead1",
+    "database": "prod_db",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  }
+}
